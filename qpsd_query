@@ -1,0 +1,14 @@
+#!/usr/bin/env bash
+
+QPSD_DATA_DIR="${QPSD_DATA_DIR:=$HOME/.qpsd}"
+if [ ! -d "${QPSD_DATA_DIR}" ]; then
+  echo "QPSD_DATA_DIR (${QPSD_DATA_DIR}) doesn't exist, creating it"
+  mkdir "${QPSD_DATA_DIR}"
+fi
+
+target_format="${1}"
+target_query="${2}"
+
+latest_datafile=$(find "${QPSD_DATA_DIR}" -name "*${target_format}*" | uniq | sort | tail -n 1)
+
+cat "${latest_datafile}" | awk -v monre="\\\\|[[:space:]]+${target_query}[[:space:]]+\\\\|" 'BEGIN { seg=0 } $0 ~ monre { seg=9 } /\+\-*\+/ { seg = seg - 1 } { if(seg > 0) print $0 }'

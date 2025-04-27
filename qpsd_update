@@ -1,0 +1,35 @@
+#!/usr/bin/env bash
+
+QPSD_DATA_DIR="${QPSD_DATA_DIR:=$HOME/.qpsd}"
+if [ ! -d "${QPSD_DATA_DIR}" ]; then
+  echo "QPSD_DATA_DIR (${QPSD_DATA_DIR}) doesn't exist, creating it"
+  mkdir "${QPSD_DATA_DIR}"
+fi
+
+target_format="${1}"
+target_data="${2}"
+
+if [ -z "${target_data}" ]; then
+  echo "defaulting to most recent data dump"
+
+  target_data=$(curl -s https://www.smogon.com/stats/ |
+                      awk '/^<a href=/ { match($0, "href=\".*\""); split(substr($0, RSTART, RLENGTH), ary, "\""); print ary[2] } ' |
+                      uniq |
+                      sort |
+                      tail -n 1 |
+                      xargs -I _ basename _ /)
+fi
+
+echo "target data dump: ${target_data}"
+
+target_file="${QPSD_DATA_DIR}/${target_data}-${target_format}.txt"
+
+if [ -f ${target_file} ]; then
+  echo "data exists, skipping update"
+  exit 0
+fi
+
+curl \
+  -s \
+  --output "${target_file}" \
+  "https://www.smogon.com/stats/${target_data}/moveset/${target_format}-0.txt"
